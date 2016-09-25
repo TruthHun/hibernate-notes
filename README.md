@@ -36,7 +36,324 @@ ORM的主要解决对象-关系的映射
 **ORM 采用元数据来描述对象-关系映射细节**, 元数据通常采用 XML 格式, 并且存放在专门的对象-关系映射文件中。
 **ORM结构框架图**：
 ![Alt text](./1464100572864.png)
-##二、Hibernate-HelloWorld
+##二、使用Maven构建Hibernate项目
+###1. 使用Maven Archetype构建一个Java项目
+在构建时加入如下信息：
+``` xml
+<archetype>
+      <groupId>org.apache.maven.archetypes</groupId>
+      <artifactId>maven-archetype-quickstart</artifactId>
+      <version>1.1</version>
+      <description>An archetype which contains a sample Maven project.</description>
+</archetype>
+```
+这样会在项目中生成如下目录结构：
+```
+|-- pom.xml
+`-- src
+    `-- main
+        `-- resources
+            |-- META-INF
+            |   `-- maven
+            |       `--archetype.xml
+            `-- archetype-resources
+                |-- pom.xml
+                `-- src
+                    |-- main
+                    |   `-- java
+                    |       `-- App.java
+                    `-- test
+                        `-- java
+                            `-- AppTest.java
+```
+###2. 在pom.xml文件中添加依赖及配置
+~/pom.xml
+``` xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>cn.jxzhang.hibernate</groupId>
+  <artifactId>hibernate-helloworld</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>hibernate-helloworld</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- hibernate-core -->
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>4.3.2.Final</version>
+    </dependency>
+
+
+    <!-- MySQL 驱动 -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.1.39</version>
+    </dependency>
+    
+    <!-- junit测试类 -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- 指定要编译到target目录下的资源文件位置 -->
+    <resources>
+      <!-- 将src/main/java路径下的所有xml、properties文件添加到target中 -->
+      <resource>
+        <directory>src/main/java</directory>
+        <includes>
+          <include>**/*.xml</include>
+          <include>**/*.properties</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+      <!-- 将src/main/resources路径下的所有xml、properties文件添加到target中 -->
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*.xml</include>
+          <include>**/*.properties</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+
+    <plugins>
+      <!-- 指定Maven编译条件 否则会出现：
+        Error:java: javacTask: source release 8 requires target release 1.8
+       -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
+```
+
+###3. 创建hibernate.cfg.xml文件
+~/src/main/resources/hibernate.cfg.xml
+``` xml
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <!-- Database connection settings -->
+        <property name="connection.driver_class">com.mysql.jdbc.Driver</property>
+        <property name="connection.url">jdbc:mysql://localhost:3306</property>
+        <property name="connection.username">root</property>
+        <property name="connection.password">123</property>
+
+        <!-- JDBC connection pool (use the built-in) -->
+        <property name="connection.pool_size">1</property>
+
+        <!-- SQL dialect -->
+        <property name="dialect">org.hibernate.dialect.MySQLInnoDBDialect</property>
+
+        <!-- Echo all executed SQL to stdout -->
+        <property name="show_sql">true</property>
+
+        <!-- Drop and re-create the database schema on startup -->
+        <property name="hbm2ddl.auto">update</property>
+        
+        <!-- 指定实体类位置（实体类通过注解指定映射关系），不用指定配置文件位置 -->
+        <mapping class="cn.jxzhang.hibernate.EmpEntity"/>
+    </session-factory>
+</hibernate-configuration>
+```
+
+###4. 使用Intellij Idea中的 Persistent 自动生成实体类
+~/src/main/java/cn/jxzhang/hibernate/EmpEntity.java
+``` java
+@Entity
+@Table(name = "emp", schema = "db1", catalog = "")
+public class EmpEntity {
+    private int empno;
+    private String ename;
+    private String job;
+    private Integer mgr;
+    private Date hiredate;
+    private Integer sal;
+    private Integer comm;
+
+    @Id
+    @Column(name = "EMPNO")
+    public int getEmpno() {
+        return empno;
+    }
+
+    public void setEmpno(int empno) {
+        this.empno = empno;
+    }
+
+    @Basic
+    @Column(name = "ENAME")
+    public String getEname() {
+        return ename;
+    }
+
+    public void setEname(String ename) {
+        this.ename = ename;
+    }
+
+    @Basic
+    @Column(name = "JOB")
+    public String getJob() {
+        return job;
+    }
+
+    public void setJob(String job) {
+        this.job = job;
+    }
+
+    @Basic
+    @Column(name = "MGR")
+    public Integer getMgr() {
+        return mgr;
+    }
+
+    public void setMgr(Integer mgr) {
+        this.mgr = mgr;
+    }
+
+    @Basic
+    @Column(name = "HIREDATE")
+    public Date getHiredate() {
+        return hiredate;
+    }
+
+    public void setHiredate(Date hiredate) {
+        this.hiredate = hiredate;
+    }
+
+    @Basic
+    @Column(name = "SAL")
+    public Integer getSal() {
+        return sal;
+    }
+
+    public void setSal(Integer sal) {
+        this.sal = sal;
+    }
+
+    @Basic
+    @Column(name = "COMM")
+    public Integer getComm() {
+        return comm;
+    }
+
+    public void setComm(Integer comm) {
+        this.comm = comm;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EmpEntity empEntity = (EmpEntity) o;
+
+        if (empno != empEntity.empno) return false;
+        if (ename != null ? !ename.equals(empEntity.ename) : empEntity.ename != null) return false;
+        if (job != null ? !job.equals(empEntity.job) : empEntity.job != null) return false;
+        if (mgr != null ? !mgr.equals(empEntity.mgr) : empEntity.mgr != null) return false;
+        if (hiredate != null ? !hiredate.equals(empEntity.hiredate) : empEntity.hiredate != null) return false;
+        if (sal != null ? !sal.equals(empEntity.sal) : empEntity.sal != null) return false;
+        if (comm != null ? !comm.equals(empEntity.comm) : empEntity.comm != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = empno;
+        result = 31 * result + (ename != null ? ename.hashCode() : 0);
+        result = 31 * result + (job != null ? job.hashCode() : 0);
+        result = 31 * result + (mgr != null ? mgr.hashCode() : 0);
+        result = 31 * result + (hiredate != null ? hiredate.hashCode() : 0);
+        result = 31 * result + (sal != null ? sal.hashCode() : 0);
+        result = 31 * result + (comm != null ? comm.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "EmpEntity{" +
+                "empno=" + empno +
+                ", ename='" + ename + '\'' +
+                ", job='" + job + '\'' +
+                ", mgr=" + mgr +
+                ", hiredate=" + hiredate +
+                ", sal=" + sal +
+                ", comm=" + comm +
+                '}';
+    }
+}
+```
+### 5. 创建测试类
+``` java
+public class Main {
+    private static final SessionFactory ourSessionFactory;
+    private static final ServiceRegistry serviceRegistry;
+
+    static {
+        try {
+            Configuration configuration = new Configuration();
+            configuration.configure();
+
+            serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();
+            ourSessionFactory = configuration.buildSessionFactory(serviceRegistry);
+        } catch (Throwable ex) {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
+
+    private static Session getSession() throws HibernateException {
+        return ourSessionFactory.openSession();
+    }
+
+    public void getEmpById(int id){
+        final Session session = getSession();
+        try {
+            EmpEntity emp = (EmpEntity) session.get(EmpEntity.class,id);
+            System.out.println(emp);
+        } finally {
+            session.close();
+        }
+    }
+}
+```
+
+##三、Hibernate-HelloWorld
 ###1. HelloWorld
 1. 配置hibernate_cfg.xml
 >**Tips**:In most cases, Hibernate is able to properly determine which dialect to use. See Section 27.3, “Dialect resolution” for more information.
@@ -169,7 +486,7 @@ public class UserEntity {
 }
 ```
 
-3. 创建对象-关系映射文件
+3. 创建对象 - 关系映射文件
 cn.jxzhang.hibernate.domain.UserEntity.hbm.xml
 ``` xml
 <?xml version='1.0' encoding='utf-8'?>
@@ -357,8 +674,8 @@ Hibernate采用XML格式的文件来指定对象和关系数据之间的映射�
 **class标签**：用于指定类和表的映射关系
 **id标签**：指定持久类的OID以及表的主键
 **property标签**：指定列与表之间的映射
-####2.3 Hiberante配置文件
-```java
+####2.3 Hibernate配置文件
+``` java
 <hibernate-configuration>
     <session-factory>
 
@@ -400,10 +717,8 @@ Hibernate采用XML格式的文件来指定对象和关系数据之间的映射�
 
 创建Configuration的两种方式：
 ``` java
-Configuration configuration = new Configuration()
-		.configure();      //加载默认的XML文件
-Configuration configuration = new Configuration();                 
-						   //加载默认的properties文件
+Configuration configuration = new Configuration().configure();      //加载默认的XML文件
+Configuration configuration = new Configuration();                  //加载默认的properties文件
 ```
 同时Configuration创建时还可以添加参数：
 ``` java
@@ -439,9 +754,9 @@ Session提供的方法：
 - 持久化对象都得保存，更新和删除：save(),update(),saveOrUpdate(),delete()
 - 开启事务: beginTransaction().
 - 管理 Session 的方法：isOpen(),flush(), clear(), evict(), close()等
-####2.7 Transcation事务
+####2.7 Transaction事务
 **Transcation**代表一次原子操作，它具有数据库事务的概念。**所有持久层都应该在事务管理下进行，即使是只读操作**。 
-```java
+``` java
 Transaction tx = session.beginTransaction();
 ```
 常用方法:

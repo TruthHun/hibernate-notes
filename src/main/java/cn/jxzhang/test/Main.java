@@ -12,23 +12,34 @@ import org.hibernate.service.ServiceRegistry;
  * Created by J.X.Zhang on 2016-09-25.
  */
 public class Main {
-    private static final SessionFactory ourSessionFactory;
+
+    /** 1. 创建一个SessionFactory对象 */
+    private static final SessionFactory sessionFactory;
+
+    /** 2. 创建一个ServiceRegistry对象:hibernate的任何服务和配置都需要在该对象中注册后才能有效 */
     private static final ServiceRegistry serviceRegistry;
+
+    /** 3. 加载配置文件（默认加载资源路径下的hibernate.cfg.xml文件） */
+    private static final Configuration configuration;
 
     static {
         try {
-            Configuration configuration = new Configuration();
-            configuration.configure();
-
+            configuration = new Configuration().configure();
             serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();
-            ourSessionFactory = configuration.buildSessionFactory(serviceRegistry);
+            sessionFactory = configuration.buildSessionFactory(serviceRegistry);
         } catch (Throwable ex) {
             throw new ExceptionInInitializerError(ex);
         }
     }
 
+    /**
+     * 使用SessionFactory的openSession方法获取连接
+     *
+     * @return  Session对象
+     * @throws HibernateException
+     */
     private static Session getSession() throws HibernateException {
-        return ourSessionFactory.openSession();
+        return sessionFactory.openSession();
     }
 
     public void getEmpById(int id){
