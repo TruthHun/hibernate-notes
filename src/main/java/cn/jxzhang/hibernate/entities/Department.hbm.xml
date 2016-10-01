@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+
+    <class name="cn.jxzhang.hibernate.entities.Department" table="DEPARTMENT" schema="SCOTT">
+        <id name="departmentId" column="DEPARTMENT_ID"/>
+        <property name="departmentName" column="DEPARTMENT_NAME"/>
+        <property name="managerId" column="MANAGER_ID"/>
+        <property name="locationId" column="LOCATION_ID"/>
+    </class>
+</hibernate-mapping>
