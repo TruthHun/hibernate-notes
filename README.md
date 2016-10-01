@@ -234,18 +234,29 @@ Transaction tx = session.beginTransaction();
 - Session 接口是 Hibernate 向应用程序提供的操纵数据库的最主要的接口, 它提供了基本的保存, 更新, 删除和加载 Java 对象的方法.
 - Session 具有一个缓存, 位于缓存中的对象称为持久化对象, 它和数据库中的相关记录对应. Session 能够在某些时间点, 按照缓存中对象的变化来执行相关的 SQL 语句, 来同步更新数据库, 这一过程被称为刷新缓存(flush)
 - 站在持久化的角度, Hibernate 把对象分为 4 种状态: **持久化状态**, **临时状态**, **游离状态**, **删除状态**. Session 的特定方法能使对象从一个状态转换到另一个状态. 
-###2. Session缓存
-- 在 Session 接口的实现中包含一系列的 Java 集合, 这些 Java 集合构成了 Session 缓存. 只要 Session 实例没有结束生命周期, 且没有清理缓存，则存放在它缓存中的对象也不会结束生命周期
+###3.2 Session缓存（Hibernate一级缓存）
+- 在 Session 接口的实现中包含一系列的 Java 集合, 这些 Java 集合构成了 Session 缓存. 只要 Session 实例**没有结束生命周期**, 且**没有清理缓存**，则存放在它缓存中的对象也不会结束生命周期
 - Session 缓存可减少 Hibernate 应用程序访问数据库的频率。
-###3. flush缓存
-- **flush**：Session按照缓存中对象的属性变化来同步更新数据库
+
+###3.3 操作session缓存
+Hibernate提供个方法操作session缓存：
+- flush     ：使数据表中的记录和SESSION缓存中的对象的状态保持一致。为了保持一致，则可能会发送对应的SQL语句
+- refresh   : 会强制发送SELECT语句，以使Session缓存中的数据与数据库中的数据一致
+- clear     : 清空session缓存
+####3.3.1 flush方法
+**flush**：Session按照缓存中对象的属性变化来同步更新数据库
 - **默认情况下Session在以下时间点刷新缓存**：
 	- 显式调用 Session 的 flush() 方法
 	- 当应用程序调用 Transaction 的 commit（）方法的时, 该方法先 flush ，然后在向数据库提交事务
 	- 当应用程序执行一些查询(HQL, Criteria)操作时，如果缓存中持久化对象的属性已经发生了变化，会先 flush 缓存，以保证查询结果能够反映持久化对象的最新状态
 - **flush 缓存的例外情况**: 如果对象使用 native 生成器生成 OID, 那么当调用 Session 的 save() 方法保存对象时, 会立即执行向数据库插入该实体的 insert 语句.
-- **commit() 和 flush() 方法的区别**：flush 执行一系列 sql 语句，但不提交事务；commit 方法先调用flush() 方法，然后提交事务. 意味着提交事务意味着对数据库操作永久保存下来。
-###4. Hibernate主键生成策略
+- **commit() 和 flush() 方法的区别**：flush 执行一系列 sql 语句，但不提交事务；commit 方法先调用flush()方法，然后提交事务. 意味着提交事务意味着对数据库操作永久保存下来。
+####3.3.2 refresh方法
+**refresh** : 强制发送SELECT语句，以使Session缓存中的数据与数据库中的数据一致
+MySQL数据库可能会出现使用refresh方法，但是对象的状态不是最新（MySQL数据库默认事务隔离级别为可重复读：REPEATABLE READ，详见3.6），需要手动指定MySQL的事务隔离级别。
+####3.3.3 clear方法
+**clear** :清空session缓存
+###3.4 Hibernate主键生成策略
 |标识符生成器		 |描述	|
 |:---------------|:-------|
 |increment |适用于代理主键：由hibernate自动以递增的方式生成|
@@ -258,23 +269,25 @@ Transaction tx = session.beginTransaction();
 |uuid.string|适用于代理主键：UUID被编码为16字符长字符串|
 |assigned|适用于自然主键：由Java应用程序负责生成标识符内容|
 |foreign|适用于代理主键：使用另外一个相关联的对象的标识符|
-###5. 设定刷新缓存的时间点
+###3.5 设定刷新缓存的时间点
 - 若希望改变flush的默认时间点，可以通过Session的setFlushMode()方法显示指定flush的时间点：
+
 |清理缓存的模式|查询方法|Transcation的commit()方法|Session的flush()方法|
 |:---|:---|:---|:---|
 |FlushMode.AUTO(Default)|清理|清理|清理|
 |FlushMode.COMMIT|不清理|清理|清理|
 |FlushMode.NEVER|不清理|不清理|清理|
 
-###6. 数据库的隔离级别
+###3.6 数据库的隔离级别概述
 - 对于同时运行的多个事务, 当这些事务访问数据库中相同的数据时, 如果没有采取必要的隔离机制, 就会导致各种并发问题:
 	- 脏读: 对于两个事物 T1, T2, T1 读取了已经被 T2 更新但还没有被提交的字段. 之后, 若 T2 回滚, T1读取的内容就是临时且无效的.
 	- 不可重复读: 对于两个事物 T1, T2, T1 读取了一个字段, 然后 T2 更新了该字段. 之后, T1再次读取同一个字段, 值就不同了.
 	- 幻读: 对于两个事物 T1, T2, T1 从一个表中读取了一个字段, 然后 T2 在该表中插入了一些新的行. 之后, 如果 T1 再次读取同一个表, 就会多出几行.
 - 数据库事务的隔离性: 数据库系统必须具有隔离并发运行各个事务的能力, 使它们不会相互影响, 避免各种并发问题. 
 - 一个事务与其他事务隔离的程度称为隔离级别. 数据库规定了多种事务隔离级别, 不同隔离级别对应不同的干扰程度, 隔离级别越高, 数据一致性就越好, 但并发性越弱
-####6.1 数据库的隔离级别
+####3.6.1 数据库的隔离级别
 数据库提供的四种事务隔离级别：
+
 |Modifier and Type|Field and Description|
 |:-----|:-----|
 |TRANSACTION_NONE|A constant indicating that transactions are not supported.
@@ -282,31 +295,60 @@ Transaction tx = session.beginTransaction();
 |TRANSACTION_READ_UNCOMMITTED|A constant indicating that dirty reads, non-repeatable reads and phantom reads can occur.
 |TRANSACTION_REPEATABLE_READ|A constant indicating that dirty reads and non-repeatable reads are prevented; phantom reads can occur.
 |TRANSACTION_SERIALIZABLE|A constant indicating that dirty reads, non-repeatable reads and phantom reads are prevented.
+
 Oracle支持的两种事务隔离级别：
-`TRANSACTION_READ_COMMITTED(Default)
-TRANSACTION_SERIALIZABLE`
+
+`TRANSACTION_READ_COMMITTED(Default)`
+`TRANSACTION_SERIALIZABLE`
+
 MySQL支持四种事务隔离级别：
-`TRANSACTION_READ_COMMITTED
-TRANSACTION_READ_UNCOMMITTED
-TRANSACTION_REPEATABLE_READ(Default)
-TRANSACTION_SERIALIZABLE`
-####6.2 在MySQL中设计隔离级别
+
+`TRANSACTION_READ_COMMITTED`
+`TRANSACTION_READ_UNCOMMITTED`
+`TRANSACTION_REPEATABLE_READ(Default)`
+`TRANSACTION_SERIALIZABLE`
+####3.6.2 在MySQL中设置隔离级别
 - 每启动一个 mysql 程序, 就会获得一个单独的数据库连接. 每个数据库连接都有一个全局变量 @@tx_isolation, 表示当前的事务隔离级别. MySQL 默认的隔离级别为 Repeatable Read
 - 查看当前的隔离级别: 
 `SELECT @@tx_isolation;`
 - 设置当前 mySQL 连接的隔离级别:  
 `set transaction isolation level read committed;`
-设置数据库系统的全局的隔离级别:
+- 设置数据库系统的全局的隔离级别:
 ` set global transaction isolation level read committed;`
-####6.3 在Hibernate中设置隔离级别
-- JDBC 数据库连接使用数据库系统默认的隔离级别. 在 Hibernate 的配置文件中可以显式的设置隔离级别. 每一个隔离级别都对应一个整数:
+####3.6.3 在Hibernate中设置隔离级别
+JDBC 数据库连接使用数据库系统默认的隔离级别. 在 Hibernate 的配置文件中可以显式的设置隔离级别. 每一个隔离级别都对应一个整数:
 
- 1 - READ UNCOMMITED 
- 2 - READ COMMITED
- 4 - REPEATABLE READ
- 8 - SERIALIZEABLE
+- 1 - READ UNCOMMITED
 
-- Hibernate 通过为 Hibernate 映射文件指定 hibernate.connection.isolation 属性来设置事务的隔离级别
+- 2 - READ COMMITED
+ 
+- 4 - REPEATABLE READ
+
+- 8 - SERIALIZEABLE
+
+Hibernate 通过为 Hibernate 映射文件指定 hibernate.connection.isolation 属性来设置事务的隔离级别
+``` xml
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+    <!-- 指定数据库事务的隔离级别为：READ COMMITED(MySQL需要手动指定为该隔离级别，Oracle默认为该隔离级别) -->
+    <property name="connection.isolation">2</property>
+    ...
+    </session-factory>
+</hibernate-configuration>
+```
+##4 Hibernate持久化对象状态
+Entity states
+**new**, or **transient** - the entity has just been instantiated and is not associated with a persistence context. It has no persistent representation in the database and no identifier value has been assigned.
+
+**managed**, or **persistent** - the entity has an associated identifier and is associated with a persistence context.
+
+**detached** - the entity has an associated identifier, but is no longer associated with a persistence context (usually because the persistence context was closed or the instance was evicted from the context)
+
+**removed** - the entity has an associated identifier and is associated with a persistence context, however it is scheduled for removal from the database.
 
 
 

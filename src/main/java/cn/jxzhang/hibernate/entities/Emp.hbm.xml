@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+
+    <class name="cn.jxzhang.hibernate.entities.Emp" table="EMP" schema="SCOTT">
+        <id name="empno" column="EMPNO">
+            <generator class="seqhilo"/>
+        </id>
+        <property name="ename" column="ENAME"/>
+        <property name="job" column="JOB"/>
+        <property name="mgr" column="MGR"/>
+        <property name="hiredate" column="HIREDATE"/>
+        <property name="sal" column="SAL"/>
+        <property name="comm" column="COMM"/>
+        <property name="deptno" column="DEPTNO"/>
+    </class>
+</hibernate-mapping>
