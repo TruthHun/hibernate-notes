@@ -341,14 +341,80 @@ Hibernate 通过为 Hibernate 映射文件指定 hibernate.connection.isolation 
 </hibernate-configuration>
 ```
 ##4 Hibernate持久化对象状态
-Entity states
-**new**, or **transient** - the entity has just been instantiated and is not associated with a persistence context. It has no persistent representation in the database and no identifier value has been assigned.
+###4.1 Entity states
+Hibernate 官方文档：[Chapter 3. Persistence Contexts](http://docs.jboss.org/hibernate/orm/4.3/devguide/en-US/html_single/#d5e883)
 
-**managed**, or **persistent** - the entity has an associated identifier and is associated with a persistence context.
 
-**detached** - the entity has an associated identifier, but is no longer associated with a persistence context (usually because the persistence context was closed or the instance was evicted from the context)
+####4.1.1 临时对象(New or Transient):
+- 在使用代理主键的情况下, OID 通常为 null
+- 不处于 Session 的缓存中
+- 在数据库中没有对应的记录
 
-**removed** - the entity has an associated identifier and is associated with a persistence context, however it is scheduled for removal from the database.
+>**new**, or **transient**(['trænzɪənt] adj. 短暂的；路过的) - the entity has just been instantiated([ɪn'stænʃɪeɪt] v. 实例化（instantiate的过去分词）；具现化，实体化) and is not associated with a persistence context. It has no persistent representation in the database and no identifier value has been assigned.
+
+####4.1.2 持久化对象(Managed or Persistent)：
+
+- OID 不为 null(has an associated identifier)
+- 位于 Session 缓存中
+- 若在数据库中已经有和其对应的记录(associated with a persistence context), 持久化对象和数据库中的相关记录对应
+- Session 在 flush 缓存时, 会根据持久化对象的属性变化, 来同步更新数据库
+- 在同一个 Session 实例的缓存中, 数据库表中的每条记录只对应唯一的持久化对象
+
+>**managed**, or **persistent**([pə'sɪst(ə)nt] adj. 固执的，坚持的；持久稳固的) - the entity has an **associated identifier** and is associated with a persistence context.
+
+####4.1.3 游离对象(Detached)：
+- OID 不为 null
+- 不再处于 Session 缓存中
+- 一般情况需下, 游离对象是由持久化对象转变过来的, 因此在数据库中可能还存在与它对应的记录
+
+>**detached**([dɪ'tætʃt] adj. 分离的，分开的；超然的) - the entity has an associated identifier, but is no longer associated with a persistence context (usually because the persistence context was closed or the instance was evicted(evict [ɪ'vɪkt] vt. 驱逐；逐出) from the context)
+
+####4.1.4 删除对象(Removed):
+- 在数据库中没有和其 OID 对应的记录
+- 不再处于 Session 缓存中
+- 一般情况下, 应用程序不该再使用被删除的对象
+
+>**removed** - the entity has an associated identifier and is associated with a persistence context, however it is scheduled for removal from the database.
+
+###4.2 Making entities persistent
+将一个对象从临时状态转换为持久化状态：
+session.save();
+session.persist();
+
+>Once you've created a new entity instance (using the standard new operator) it is in new state. You can make it persistent by associating it to either a _org.hibernate.Session_ or _javax.persistence.EntityManager_
+
+``` java
+    Emp emp = new Emp();
+    emp.setEname("wangWu");
+    emp.setHiredate(new Date());
+    emp.setComm(10000L);
+    emp.setSal(10000L);
+    emp.setJob("MANAGER");
+    emp.setMgr(null);
+    //emp.setEmpno(10000L);        //在save方法执行之前，为对象设置ID是无效的(该条语句无任何作用)
+    session.save(emp);
+    //emp.setEmpno(10000L);        //在save方法执行之后，持久化对象的ID是不能被修改的（该条语句会抛出一个异常）
+```
+
+persist方法与save方法的区别：
+- 在persist方法执行之前，若对象已经有id了，则不会执行INSERT方法，相反会抛出一个异常PersistentObjectException
+
+###4.3 session的get与load方法
+从数据库中加载数据:
+session.load();
+session.get();
+
+load方法与get方法的区别：
+- 1. 执行get方法会立即加载对象，而执行load方法，若不使用该对象，则不会立即执行查询操作，而是返回一个代理对象
+    - load是延迟检索
+    - get是立即检索
+- 2. 若数据库中没有对应的记录，且SESSION也没有被关闭，同时需要使用对象时
+    - get返回null
+    - load直接抛出异常（但是如果没有使用该对象的任何属性（没有打印），没问题；若需要初始化会抛出异常）
+- 3. load方法可能会抛出LazyInitializationException异常 ：
+    - 在需要初始化代理对象之前已经关闭了SESSION（在打印EMP对象之前关闭SESSION，get方法不会抛出异常（已经加载完毕），load方法会抛出异常）。
+
+
 
 
 

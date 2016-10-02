@@ -28,6 +28,9 @@
         <!-- 指定数据库事务的隔离级别为：READ COMMITED -->
         <property name="connection.isolation">2</property>
 
+        <!-- 在对对象执行delete操作时，将其OID置为null，使其变为一个游离对象 -->
+        <property name="use_identifier_rollback">true</property>
+
         <mapping resource="cn/jxzhang/hibernate/entities/Department.hbm.xml"/>
         <mapping resource="cn/jxzhang/hibernate/entities/Employee.hbm.xml"/>
         <mapping resource="cn/jxzhang/hibernate/entities/Emp.hbm.xml"/>
