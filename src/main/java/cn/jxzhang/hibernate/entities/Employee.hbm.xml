@@ -15,5 +15,9 @@
         <property name="salary" column="SALARY"/>
         <property name="commissionPct" column="COMMISSION_PCT"/>
         <property name="managerId" column="MANAGER_ID"/>
+        <property name="departmentId" column="DEPARTMENT_ID"/>
     </class>
+
+    <!-- 在配置文件中定义查询语句并在代码中执行 -->
+    <query name="salaryEmps"><![CDATA[FROM Employee e WHERE e.salary > :minSal and e.salary < :maxSal]]></query>
 </hibernate-mapping>

@@ -11,6 +11,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Date;
@@ -18,6 +19,7 @@ import java.util.Date;
 /**
  * Created by J.X.Zhang on 2016-10-01.
  */
+@Ignore
 public class SessionTest {
     private Session session;
     private Transaction transaction;

@@ -16,6 +16,24 @@ public class Employee {
     private Long salary;
     private Long commissionPct;
     private Long managerId;
+    private Long departmentId;
+
+    public Employee(long employeeId, String firstName, String email) {
+        this.employeeId = employeeId;
+        this.firstName = firstName;
+        this.email = email;
+    }
+
+    public Employee() {
+    }
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
 
     public long getEmployeeId() {
         return employeeId;
@@ -116,8 +134,8 @@ public class Employee {
         if (commissionPct != null ? !commissionPct.equals(employee.commissionPct) : employee.commissionPct != null)
             return false;
         if (managerId != null ? !managerId.equals(employee.managerId) : employee.managerId != null) return false;
+        return departmentId != null ? departmentId.equals(employee.departmentId) : employee.departmentId == null;
 
-        return true;
     }
 
     @Override
@@ -132,6 +150,7 @@ public class Employee {
         result = 31 * result + (salary != null ? salary.hashCode() : 0);
         result = 31 * result + (commissionPct != null ? commissionPct.hashCode() : 0);
         result = 31 * result + (managerId != null ? managerId.hashCode() : 0);
+        result = 31 * result + (departmentId != null ? departmentId.hashCode() : 0);
         return result;
     }
 
@@ -148,6 +167,7 @@ public class Employee {
                 ", salary=" + salary +
                 ", commissionPct=" + commissionPct +
                 ", managerId=" + managerId +
+                ", departmentId=" + departmentId +
                 '}';
     }
 }
