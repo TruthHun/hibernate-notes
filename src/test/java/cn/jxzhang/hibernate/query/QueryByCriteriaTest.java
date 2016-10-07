@@ -10,34 +10,32 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.criterion.*;
 import org.hibernate.service.ServiceRegistry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 /**
  * @author J.X.Zhang
  * @version 1.0
  */
 public class QueryByCriteriaTest {
-    private Session session;
-    private Transaction transaction;
-    private ServiceRegistry serviceRegistry;
-    private SessionFactory ourSessionFactory;
+    private static Session session;
+    private static Transaction transaction;
+    private static ServiceRegistry serviceRegistry;
+    private static SessionFactory ourSessionFactory;
 
     private static Logger logger;
 
-    @Before
-    public void init() {
+    @BeforeClass
+    public static void init() {
         Configuration configuration = new Configuration().configure();
         serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();
         ourSessionFactory = configuration.buildSessionFactory(serviceRegistry);
         session = ourSessionFactory.openSession();
         transaction = session.beginTransaction();
-        logger = LogManager.getLogger("org.apache.log4j.xml");
+        logger = LogManager.getLogger(QueryByCriteriaTest.class);
     }
 
-    @After
-    public void destroy() {
+    @AfterClass
+    public static void destroy() {
         transaction.commit();
         session.close();
     }
