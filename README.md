@@ -289,7 +289,7 @@ MySQL数据库可能会出现使用refresh方法，但是对象的状态不是�
 数据库提供的四种事务隔离级别：
 
 |Modifier and Type|Field and Description|
-|:-----|:-----|
+|:-----:|:-----:|
 |TRANSACTION_NONE|A constant indicating that transactions are not supported.
 |TRANSACTION_READ_COMMITTED|A constant indicating that dirty reads are prevented; non-repeatable reads and phantom reads can occur.
 |TRANSACTION_READ_UNCOMMITTED|A constant indicating that dirty reads, non-repeatable reads and phantom reads can occur.
@@ -451,7 +451,9 @@ public void testDoWork(){
 }
 ```
 ##5 Hibernate检索
+
 ###5.1 Hibernate检索方式概述
+
 **导航对象图检索方式**:  根据已经加载的对象导航到其他对象
 **OID 检索方式**:  按照对象的 OID 来检索对象
 **HQL 检索方式**: 使用面向对象的 HQL 查询语言
@@ -459,6 +461,7 @@ public void testDoWork(){
 **本地 SQL 检索方式**: 使用本地数据库的 SQL 查询语句
 
 ###5.2 HQL 检索方式
+
 HQL(Hibernate Query Language) 是面向对象的查询语言, 它和 SQL 查询语言有些相似. 在 Hibernate 提供的各种检索方式中, HQL 是使用最广的一种检索方式. 它有如下功能:
 - 在查询语句中设定各种查询条件
 - 支持投影查询, 即仅检索出对象的部分属性
@@ -469,17 +472,22 @@ HQL(Hibernate Query Language) 是面向对象的查询语言, 它和 SQL 查询�
 - 支持子查询
 - 支持动态绑定参数
 - 能够调用 用户定义的 SQL 函数或标准的 SQL 函数
+
 ####5.2.1 使用HQL进行检索
+
 #####5.2.1.1 使用HQL进行检索的步骤
+
 - 通过 Session 的 createQuery() 方法创建一个 Query 对象, 它包括一个 HQL 查询语句. HQL 查询语句中可以包含命名参数
 - 动态绑定参数
 - 调用 Query 相关方法执行查询语句. 
 
 #####5.2.1.2 HQL与SQL的区别
+
 - HQL 查询语句是面向对象的, Hibernate 负责解析 HQL 查询语句, 然后根据对象-关系映射文件中的映射信息, 把 HQL 查询语句翻译成相应的 SQL 语句. HQL 查询语句中的主体是域模型中的类及类的属性
 - SQL 查询语句是与关系数据库绑定在一起的. SQL 查询语句中的主体是数据库表及表的字段. 
 
 #####5.2.1.3 绑定参数
+
 Hibernate 的参数绑定机制依赖于 JDBC API 中的 PreparedStatement 的预定义 SQL 语句功能.
 HQL 的参数绑定由两种形式:
 1. 按参数名字绑定: 在 HQL 查询语句中定义命名参数, 命名参数以 “:” 开头.
@@ -491,6 +499,7 @@ HQL 的参数绑定由两种形式:
 HQL 采用 **ORDER BY** 关键字对查询结果排序
 
 ####5.2.2 在映射文件中定义命名查询语句
+
 在映射文件中定义命名查询语句
 - Hibernate 允许在映射文件中定义字符串形式的查询语句. 
 - <query> 元素用于定义一个 HQL 查询语句, 它和 <class> 元素并列. 
@@ -507,16 +516,19 @@ HQL 采用 **ORDER BY** 关键字对查询结果排序
 ```
 
 ####5.2.3 HQL分页查询
+
 query.setFirstResult()：设置从第几条记录开始查询
 query.setMaxResults():  设置查询出来的最大记录数
 
 ####5.2.4 HQL投影查询
+
 - 投影查询: 查询结果仅包含实体的部分属性. 通过 SELECT 关键字实现.
 - Query 的 list() 方法返回的集合中包含的是数组类型的元素, 每个对象数组代表查询结果的一条记录
 - 可以在持久化类中定义一个对象的构造器来包装投影查询返回的记录, 使程序代码能完全运用面向对象的语义来访问查询结果集. 
  -可以通过 DISTINCT 关键字来保证查询结果不会返回重复元素
 
 ####5.2.5  HQL报表查询
+
 报表查询用于对数据分组和统计, 与 SQL 一样, HQL 利用 GROUP BY 关键字对数据分组, 用 HAVING 关键字对分组数据设定约束条件.
 在 HQL 查询语句中可以调用以下聚集函数
 - count()
@@ -524,30 +536,43 @@ query.setMaxResults():  设置查询出来的最大记录数
 - max()
 - sum()
 - avg()
+
 ####5.2.6 Hibernate连接查询
+
 #####5.2.6.1 外连接&迫切外连接
+
 ######5.2.6.1.1 Hibernate中的外连接
+
 - LEFT JOIN 关键字表示左外连接查询. 
 - RIGHT JOIN 关键字表示左外连接查询. 
 - list() 方法返回的集合中存放的是对象数组类型
 - 根据配置文件来决定 Employee 集合的检索策略. 
 - 如果希望 list() 方法返回的集合中仅包含 Department 对象, 可以在HQL 查询语句中使用 SELECT 关键字
+
 ######5.2.6.1.2 Hibernate中的迫切外连接
+
 - LEFT JOIN FETCH 关键字表示迫切左外连接检索策略.
 - RIGHT JOIN FETCH 关键字表示迫切左外连接检索策略.
 - list() 方法返回的集合中存放实体对象的引用, 每个 Department 对象关联的 Employee  集合都被初始化, 存放所有关联的 Employee 的实体对象. 
 - 查询结果中可能会包含重复元素, 可以通过一个 HashSet 来过滤重复元素
+
 #####5.2.6.2 内链接&迫切内连接
+
 ######5.2.6.2.1 Hibernate中的内连接
+
 - INNER JOIN 关键字表示内连接, 也可以省略 INNER 关键字
 - list() 方法的集合中存放的每个元素对应查询结果的一条记录, 每个元素都是对象数组类型
 如果希望 list() 方法的返回的集合仅包含 Department  对象, 可以在 HQL 查询语句中使用 SELECT 关键字
+
 ######5.2.6.2.1 Hibernate中的迫切内连接
+
 - INNER JOIN FETCH 关键字表示迫切内连接, 也可以省略 INNER 关键字
 - list() 方法返回的集合中存放 Department 对象的引用, 每个 Department 对象的 Employee 集合都被初始化, 存放所有关联的 Employee 对象
 
 ###5.2.2 QBC检索方式
+
 ####5.2.2.1 QBC检索方式概述
+
 QBC 查询就是通过使用 Hibernate 提供的 Query By Criteria API 来查询对象，这种 API 封装了 SQL 语句的动态拼装，对查询提供了更加面向对象的功能接口
 
 
