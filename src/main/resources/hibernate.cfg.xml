@@ -10,8 +10,23 @@
         <property name="connection.username">scott</property>
         <property name="connection.password">tiger</property>
 
-        <!-- JDBC connection pool (use the built-in) -->
-        <property name="connection.pool_size">1</property>
+        <!--&lt;!&ndash; JDBC connection pool (use the built-in) &ndash;&gt;-->
+        <!--<property name="connection.pool_size">1</property>-->
+
+        <!-- 配置C3P0数据库连接池 -->
+        <property name="hibernate.c3p0.max_size">10</property>
+        <property name="hibernate.c3p0.min_size">5</property>
+        <property name="hibernate.c3p0.acquire_increment">2</property>
+        <property name="hibernate.c3p0.idle_test_period">2000</property>
+        <property name="hibernate.c3p0.timeout">2000</property>
+        <property name="hibernate.c3p0.max_statements">10</property>
+
+        <!-- 以下两条配置项对Oracle有效，对MySQL无效 -->
+        <!-- 设置jdbc的statement读取数据时每次从数据库中取出的记录数 -->
+        <property name="hibernate.jdbc.fetch_size">100</property>
+
+        <!-- 设定数据库进行批量删除，批量更新和批量插入时的批次大小 -->
+        <property name="hibernate.jdbc.batch_size">30</property>
 
         <!-- SQL dialect -->
         <property name="dialect">org.hibernate.dialect.Oracle10gDialect</property>
@@ -34,6 +49,10 @@
         <mapping resource="cn/jxzhang/hibernate/entities/Department.hbm.xml"/>
         <mapping resource="cn/jxzhang/hibernate/entities/Employee.hbm.xml"/>
         <mapping resource="cn/jxzhang/hibernate/entities/Emp.hbm.xml"/>
+        <mapping resource="cn/jxzhang/hibernate/entities/Programmer.hbm.xml"/>
+        <mapping resource="cn/jxzhang/hibernate/entities/Manager.hbm.xml"/>
+        <mapping resource="cn/jxzhang/hibernate/mapping/many2one/Customer.hbm.xml"/>
+        <mapping resource="cn/jxzhang/hibernate/mapping/many2one/Order.hbm.xml"/>
 
     </session-factory>
 </hibernate-configuration>

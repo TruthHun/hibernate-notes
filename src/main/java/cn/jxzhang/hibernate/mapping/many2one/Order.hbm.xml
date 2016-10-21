@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="cn.jxzhang.hibernate.mapping.many2one">
+    <class name="Order" table="Orders">
+        <id name="oid" column="oid">
+            <generator class="uuid"/>
+        </id>
+        <property name="oname" column="oname"/>
+
+        <!--
+            映射多对一关联关系:使用many-to-one来映射多对一关联关系
+            name:多这一端关联的那一端的属性名字
+            class:一那一端的属性对应的类名
+            column：一那一端在多的一端对应的数据表中外键的名字
+
+        -->
+        <many-to-one name="customer" class="Customer" column="cid"/>
+
+    </class>
+
+
+
+</hibernate-mapping>

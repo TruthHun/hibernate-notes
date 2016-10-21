@@ -2,18 +2,20 @@
 <!DOCTYPE hibernate-mapping PUBLIC
     "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
-<hibernate-mapping>
+<hibernate-mapping package="cn.jxzhang.hibernate.entities">
 
-    <class name="cn.jxzhang.hibernate.entities.Emp" table="EMP" schema="SCOTT">
+    <class name="Emp" table="EMP" schema="SCOTT">
         <id name="empno" column="EMPNO">
-            <generator class="seqhilo"/>
+            <generator class="native"/>
         </id>
-        <property name="ename" column="ENAME"/>
+        <property name="ename" column="ENAME" update="false"/>
         <property name="job" column="JOB"/>
         <property name="mgr" column="MGR"/>
         <property name="hiredate" column="HIREDATE"/>
         <property name="sal" column="SAL"/>
         <property name="comm" column="COMM"/>
         <property name="deptno" column="DEPTNO"/>
+        <property name="desc" formula="(SELECT job||' : '||sal from emp e where e.empno = empno)"/>
+
     </class>
 </hibernate-mapping>

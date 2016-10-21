@@ -15,6 +15,15 @@ public class Emp {
     private Long sal;
     private Long comm;
     private Long deptno;
+    private String desc;
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
 
     public Emp() {
     }
@@ -147,6 +156,7 @@ public class Emp {
                 ", sal=" + sal +
                 ", comm=" + comm +
                 ", deptno=" + deptno +
+                ", desc='" + desc + '\'' +
                 '}';
     }
 }

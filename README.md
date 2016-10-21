@@ -551,6 +551,358 @@ query.setMaxResults():  设置查询出来的最大记录数
 QBC 查询就是通过使用 Hibernate 提供的 Query By Criteria API 来查询对象，这种 API 封装了 SQL 语句的动态拼装，对查询提供了更加面向对象的功能接口
 
 
+##6 Hibernate配置文件
+###6.1 Hibernate配置文件概述
+- Hibernate 配置文件主要用于配置数据库连接和 Hibernate 运行时所需的各种属性，**每个 Hibernate 配置文件对应一个 Configuration 对象**
+Hibernate配置文件可以有两种格式:
+    - hibernate.properties
+    - hibernate.cfg.xml 
+###6.2 hibernate.cfg.xml的常用属性
+- JDBC 连接属性
+    - connection.url：数据库URL 
+    - connection.username：数据库用户名
+    - connection.password：数据库用户密码 
+    - connection.driver_class：数据库JDBC驱动 
+    - dialect：配置数据库的方言，根据底层的数据库不同产生不同的 sql 语句，Hibernate 会针对数据库的特性在访问时进行优化
+- C3P0 数据库连接池属性
+    - hibernate.c3p0.max_size: 数据库连接池的最大连接数
+    - hibernate.c3p0.min_size: 数据库连接池的最小连接数
+    - hibernate.c3p0.timeout:   数据库连接池中连接对象在多长时间没有使用过后，就应该被销毁
+    - hibernate.c3p0.max_statements:  缓存 Statement 对象的数量
+    - hibernate.c3p0.idle_test_period:  表示连接池检测线程多长时间检测一次池内的所有链接对象是否超时. 连接池本身不会把自己从连接池中移除，而是专门有一个线程按照一定的时间间隔来做这件事，这个线程通过比较连接对象最后一次被使用时间和当前时间的时间差来和 timeout 做对比，进而决定是否销毁这个连接对象。 
+    - hibernate.c3p0.acquire_increment: 当数据库连接池中的连接耗尽时, 同一时刻获取多少个数据库连接
+- 其他
+    - show_sql：是否将运行期生成的SQL输出到日志以供调试。取值 true | false 
+    - format_sql：是否将 SQL 转化为格式良好的 SQL . 取值 true | false
+    - hbm2ddl.auto：在启动和停止时自动地创建，更新或删除数据库模式。取值 create | update | create-drop | validate
+    - hibernate.jdbc.fetch_size：实质是调用 Statement.setFetchSize() 方法设定 JDBC 的 Statement 读取数据的时候每次从数据库中取出的记录条数。例如一次查询1万条记录，对于Oracle的JDBC驱动来说，是不会 1 次性把1万条取出来的，而只会取出 fetchSize 条数，当结果集遍历完了这些记录以后，再去数据库取 fetchSize 条数据。因此大大节省了无谓的内存消耗。Fetch Size设的越大，读数据库的次数越少，速度越快；Fetch Size越小，读数据库的次数越多，速度越慢。Oracle数据库的JDBC驱动默认的Fetch Size = 10，是一个保守的设定，根据测试，当Fetch Size=50时，性能会提升1倍之多，当 fetchSize=100，性能还能继续提升20%，Fetch Size继续增大，性能提升的就不显著了。并不是所有的数据库都支持Fetch Size特性，例如MySQL就不支持
+    - hibernate.jdbc.batch_size：设定对数据库进行批量删除，批量更新和批量插入的时候的批次大小，类似于设置缓冲区大小的意思。batchSize 越大，批量操作时向数据库发送sql的次数越少，速度就越快。测试结果是当Batch Size=0的时候，使用Hibernate对Oracle数据库删除1万条记录需要25秒，Batch Size = 50的时候，删除仅仅需要5秒！Oracle数据库 batchSize=30 的时候比较合适。
+####6.2.1 Hibernate中C3P0数据源配置方式
+1. 导入jar包
+``` xml
+    <dependency>
+        <groupId>com.mchange</groupId>
+        <artifactId>c3p0</artifactId>
+        <version>0.9.2.1</version>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-c3p0</artifactId>
+        <version>4.3.2.Final</version>
+    </dependency>
+    
+    <dependency>
+        <groupId>com.mchange</groupId>
+        <artifactId>mchange-commons-java</artifactId>
+        <version>0.2.3.4</version>
+    </dependency>
+```
+
+2. 加入配置
+    C3P0 数据库连接池属性
+``` xml
+    <!-- 配置C3P0数据库连接池 -->
+    <property name="hibernate.c3p0.max_size">10</property>
+    <property name="hibernate.c3p0.min_size">5</property>
+    <property name="hibernate.c3p0.acquire_increment">2</property>
+    <property name="hibernate.c3p0.idle_test_period">2000</property>
+    <property name="hibernate.c3p0.timeout">2000</property>
+    <property name="hibernate.c3p0.max_statements">10</property>
+
+    <!-- 以下两条配置项对Oracle有效，对MySQL无效 -->
+    <!-- 设置jdbc的statement读取数据时每次从数据库中取出的记录数 -->
+    <property name="hibernate.jdbc.fetch_size">100</property>
+
+    <!-- 设定数据库进行批量删除，批量更新和批量插入时的批次大小 -->
+    <property name="hibernate.jdbc.batch_size">30</property>
+```
+
+##7 对象关系映射文件
+###7.1 对象关系映射文件概述
+POJO 类和数据库的映射文件*.hbm.xml
+- POJO 类和关系数据库之间的映射可以用一个XML文档来定义。
+- 通过 POJO 类的数据库映射文件，Hibernate可以理解持久化类和数据表之间的对应关系，也可以理解持久化类属性与数据库表列之间的对应关系
+- 在运行时 Hibernate 将根据这个映射文件来生成各种 SQL 语句
+- 映射文件的扩展名为 .hbm.xml
+###7。2 映射文件说明
+hibernate-mapping
+- 类层次：class
+    - 主键：id
+    - 基本类型:property
+    - 实体引用类: many-to-one  |  one-to-one
+    - 集合:set | list | map | array
+        - one-to-many
+        - many-to-many
+    - 子类:subclass | joined-subclass
+    - 其它:component | any 等
+- 查询语句:query（用来放置查询语句，便于对数据库查询的统一管理和优化）
+每个Hibernate-mapping中可以同时定义多个类. 但更推荐为每个类都创建一个单独的映射文件
+####7.2.1 <hibernate-mapping>元素属性（root元素）
+hibernate-mapping 是 hibernate 映射文件的根元素
+- schema: 指定所映射的数据库schema的名称。若指定该属性, 则表明会自动添加该 schema 前缀
+- catalog:指定所映射的数据库catalog的名称。  
+- **default-cascade**(默认为 none): 设置hibernate默认的级联风格. 若配置 Java 属性, 集合映射时没有指定 cascade 属性, 则 Hibernate 将采用此处指定的级联风格.   
+- **default-access** (默认为 property): 指定 Hibernate 的默认的属性访问策略。默认值为 property, 即使用 getter, setter 方法来访问属性. 若指定 access, 则 Hibernate 会忽略 getter/setter 方法, 而通过反射访问成员变量.
+- **default-lazy**(默认为 true): 设置 Hibernat morning的延迟加载策略. 该属性的默认值为 true, 即启用延迟加载策略. 若配置 Java 属性映射, 集合映射时没有指定 lazy 属性, 则 Hibernate 将采用此处指定的延迟加载策略 
+- auto-import (默认为 true): 指定是否可以在查询语言中使用非全限定的类名（仅限于本映射文件中的类）。 
+- _package_ (可选): 指定一个包前缀，如果在映射文档中没有指定全限定的类名， 就使用这个作为包名。 
+
+####7.2.2 <class>元素属性（hibernate-mapping子元素）
+class 元素用于指定类和表的映射
+- name:指定该持久化类映射的持久化类的类名（与package配合使用）
+- table:指定该持久化类映射的表名, Hibernate 默认以持久化类的类名作为表名
+- dynamic-insert: 若设置为 true, 表示当保存一个对象时, 会动态生成 insert 语句, insert 语句中仅包含所有取值不为 null 的字段. 默认值为 false
+- dynamic-update: 若设置为 true, 表示当更新一个对象时, 会动态生成 update 语句, update 语句中仅包含所有取值需要更新的字段. 默认值为 false
+- select-before-update:设置 Hibernate 在更新某个持久化对象之前是否需要先执行一次查询. 默认值为 false
+- batch-size:指定根据 OID 来抓取实例时每批抓取的实例数.
+- lazy: 指定是否使用延迟加载.  
+- mutable: 若设置为 true, 等价于所有的 <property> 元素的 update 属性为 false, 表示整个实例不能被更新. 默认为 true. 
+- discriminator-value: 指定区分不同子类的值. 当使用 <subclass/> 元素来定义持久化类的继承关系时需要使用该属性
+
+#####7.2.2.1 映射对象标识符
+- Hibernate 使用对象标识符(OID) 来建立内存中的对象和数据库表中记录的对应关系. 对象的 OID 和数据表的主键对应. Hibernate 通过标识符生成器来为主键赋值
+- Hibernate 推荐在数据表中使用代理主键, 即不具备业务含义的字段. 代理主键通常为整数类型, 因为整数类型比字符串类型要节省更多的数据库空间.
+- 在对象-关系映射文件中, <id> 元素用来设置对象标识符. <generator> 子元素用来设定标识符生成器.
+- Hibernate 提供了标识符生成器接口: IdentifierGenerator, 并提供了各种内置实现
+
+####7.2.3 <id>元素属性（class元素子元素）
+id元素设定持久化类的 OID 和表的主键的映射
+- name: 标识持久化类 OID 的属性名  
+- column: 设置标识属性所映射的数据表的列名(主键字段的名字). 
+- unsaved-value:若设定了该属性, Hibernate 会通过比较持久化类的 OID 值和该属性值来区分当前持久化类的对象是否为临时对象
+- type:指定 Hibernate 映射类型. Hibernate 映射类型是 Java 类型与 SQL 类型的桥梁. 如果没有为某个属性显式设定映射类型, Hibernate 会运用反射机制先识别出持久化类的特定属性的 Java 类型, 然后自动使用与之对应的默认的 Hibernate 映射类型
+- Java 的基本数据类型和包装类型对应相同的 Hibernate 映射类型. 基本数据类型无法表达 null, 所以对于持久化类的 OID 推荐使用包装类型
+
+####7.2.4 <generator>元素属性(id元素子元素)
+generator：设定持久化类设定标识符生成器
+- class: 指定使用的标识符生成器全限定类名或其缩写名
+
+#####7.2.4.1 主键生成策略
+
+|标识符生成器|查询方法|
+|:---|:---|
+|increment|适用代理主键。由Hibernate自动以自增的方式生成(只适用于测试范围) |
+|identity|适用代理主键。由底层数据库生成标识符 |
+|sequence|适用代理主键。Hibernate根据底层数据库的序列生成标识符，这要求底层数据库支持序列 |
+|hilo|适用代理主键。Hibernate分局high/low算法生成标识符 |
+|seqhilo|适用代理主键。使用一个高/低位算法来高校的生成long，short或者int类型的标识符 |
+|native|适用代理主键。根据底层数据库对自动生成标识符的方式，自动选择identity，sequence或者hilo |
+|uuid.hex|适用代理主键。hibernate采用128位的UUID算法生成标识符 |
+|uuid.string|适用代理主键。UUID被编码为16字符长度的字符串 |
+|assigned|自然主键。有Java应用程序负责生成标识符 |
+|foreign|适用代理主键。使用另外一个相关联的对象标识符 |
+
+#####7.2.4.1.1 主键生成策略-INCREMENT
+increment 标识符生成器由 Hibernate 以递增的方式为代理主键赋值。Hibernate 会先读取 NEWS 表中的主键的最大值, 而接下来向 NEWS 表中插入记录时, 就在 max(id) 的基础上递增, 增量为 1.
+- 适用范围:
+    - 由于 increment 生存标识符机制不依赖于底层数据库系统, 因此它适合所有的数据库系统
+    - **适用于只有单个 Hibernate 应用进程访问同一个数据库的场合, 在集群环境下不推荐使用它**
+    - OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+``` sql 
+Hibernate:
+    select
+        max(EMPNO) 
+    from
+        EMP
+Hibernate: 
+    insert 
+    into
+        SCOTT.EMP
+        (ENAME, EMPNO) 
+    values
+        (?, ?)
+```
+
+#####7.2.4.1.2 主键生成策略-IDENTITY
+identity 标识符生成器由底层数据库来负责生成标识符, 它要求底层数据库把主键定义为自动增长字段类型
+- 适用范围:
+    - 由于 identity 生成标识符的机制依赖于底层数据库系统, 因此, **要求底层数据库系统必须支持自动增长字段类型**. 支持自动增长字段类型的数据库包括: DB2, Mysql, MSSQLServer, Sybase 等
+    - OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+由于Oracle不支持主键自增长，所以使用该种方式指定主键生成策略会抛出异常：SQLIntegrityConstraintViolationException
+
+#####7.2.4.1.3 主键生成策略-SEQUENCE
+sequence  标识符生成器利用底层数据库提供的序列来生成标识符. **Hibernate 在持久化一个 News 对象时, 先从底层数据库的 news_seq 序列中获得一个唯一的标识号, 再把它作为主键值**
+- 适用范围:
+    - 由于 sequence 生成标识符的机制依赖于底层数据库系统的序列, 因此, 要求底层数据库系统必须支持序列. 支持序列的数据库包括: DB2, Oracle 等
+    - OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+``` sql
+Hibernate: 
+    select
+        hibernate_sequence.nextval 
+    from
+        dual
+Hibernate: 
+    insert 
+    into
+        SCOTT.EMP
+        (ENAME, EMPNO) 
+    values
+        (?, ?)
+```
+#####7.2.4.1.4 主键生成策略-HILO
+hilo 标识符生成器由 Hibernate 按照一种 high/low 算法*生成标识符, 它从数据库的特定表的字段中获取 high 值.
+Hibernate 在持久化一个 News 对象时, 由 Hibernate 负责生成主键值. hilo 标识符生成器在生成标识符时, 需要读取并修改 HI_TABLE 表中的 NEXT_VALUE 值.
+- 适用范围:
+    - 由于 hilo 生存标识符机制不依赖于底层数据库系统, 因此它适合所有的数据库系统
+    - OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+``` sql
+Hibernate: 
+    select
+        next_hi 
+    from
+        hibernate_unique_key for update
+            
+Hibernate: 
+    update
+        hibernate_unique_key 
+    set
+        next_hi = ? 
+    where
+        next_hi = ?
+Hibernate: 
+    insert 
+    into
+        SCOTT.EMP
+        (ENAME, EMPNO) 
+    values
+        (?, ?)
+```
+#####7.2.4.1.5 主键生成策略-NATIVE
+native 标识符生成器依据底层数据库对自动生成标识符的支持能力, 来选择使用 identity, sequence 或 hilo 标识符生成器. 
+- 适用范围:
+    - 由于 native 能根据底层数据库系统的类型, 自动选择合适的标识符生成器, 因此很适合于跨数据库平台开发
+    - OID 必须为 long, int 或 short 类型, 如果把 OID 定义为 byte 类型, 在运行时会抛出异常
+``` sql
+Hibernate: 
+    select
+        hibernate_sequence.nextval 
+    from
+        dual
+Hibernate: 
+    insert 
+    into
+        SCOTT.EMP
+        (ENAME, EMPNO) 
+    values
+        (?, ?)
+```
+#####7.2.4.1.6 主键生成策略-UUID
+The UUID contains: IP address, startup time of the JVM that is accurate to a quarter second, system time and a counter value that is unique within the JVM. It is not possible to obtain a MAC address or memory address from Java code, so this is the best option without using JNI.
+
+
+####7.2.5 <property>元素属性(class元素子元素)
+property 元素用于指定类的属性和表的字段的映射
+- **name**:指定该持久化类的属性的名字
+- **column**:指定与类的属性映射的表的字段名. 如果没有设置该属性, Hibernate 将直接使用类的属性名作为字段名. 
+- **type**:指定 Hibernate 映射类型. Hibernate 映射类型是 Java 类型与 SQL 类型的桥梁. 如果没有为某个属性显式设定映射类型, Hibernate 会运用反射机制先识别出持久化类的特定属性的 Java 类型, 然后自动使用与之对应的默认的 Hibernate 映射类型.
+- **not-null**:若该属性值为 true, 表明不允许为 null, 默认为 false
+- **access**:指定 Hibernate 的默认的属性访问策略。默认值为 property, 即使用 getter, setter 方法来访问属性. 若指定 field, 则 Hibernate 会忽略 getter/setter 方法, 而通过反射访问成员变量
+- **unique**: 设置是否为该属性所映射的数据列添加唯一约束. 
+- **index**: 指定一个字符串的索引名称. 当系统需要 Hibernate 自动建表时, 用于为该属性所映射的数据列创建索引, 从而加快该数据列的查询.
+- **length**: 指定该属性所映射数据列的字段的长度
+- **scale**: 指定该属性所映射数据列的小数位数, 对 double, float, decimal 等类型的数据列有效.
+- **update**: 指定该属性是否可以被修改，默认为true，意为可以修改
+- **formula**：设置一个 SQL 表达式, Hibernate 将根据它来计算出派生属性的值. 
+    - formula=“(sql)” 的英文括号不能少
+    - Sql 表达式中的列名和表名都应该和数据库对应, 而不是和持久化对象的属性对应
+    - 如果需要在 formula 属性中使用参数, 这直接使用 where cur.id=id 形式, 其中 id 就是参数, 和当前持久化对象的 id 属性对应的列的 id 值将作为参数传入. 
+- **_派生属性_**: 并不是持久化类的所有属性都直接和表的字段匹配, 持久化类的有些属性的值必须在运行时通过计算才能得出来, 这种属性称为派生属性
+
+> **注意**：Oracle的Concat函数只支持两个参数的链接（多参数链接需要使用||连接符），如果concat函数有三个及以上参数，将会抛出如下异常：
+``` text
+java.sql.SQLSyntaxErrorException: ORA-00909: invalid number of arguments
+```
+
+###7.3 映射文件说明Java类型、Hibernate类型、标准SQL类型对应关系
+参见：http://docs.jboss.org/hibernate/orm/5.2/userguide/html_single/Hibernate_User_Guide.html#basic
+
+###7.4 Java 时间和日期类型的 Hibernate 映射
+- 在 Java 中, 代表时间和日期的类型包括: java.util.Date 和 java.util.Calendar. 此外, 在 JDBC API 中还提供了 3 个扩展了 java.util.Date 类的子类: java.sql.Date, java.sql.Time 和 java.sql.Timestamp, 这三个类分别和标准 SQL 类型中的 DATE, TIME 和 TIMESTAMP 类型对应
+- 在标准 SQL 中, DATE 类型表示日期, TIME 类型表示时间, TIMESTAMP 类型表示时间戳, 同时包含日期和时间信息. 
+
+|Hibernate type (org.hibernate.type package)|JDBC type  |Java type   |**BasicTypeRegistry key(s)**   |
+|:------------|:----------|:-----------|:-----------|
+|TimestampType |TIMESTAMP|java.sql.Timestamp|timestamp, java.sql.Timestamp|
+|TimeType |TIME |java.sql.Time|time, java.sql.Time
+|DateType|DATE|java.sql.Date|date, java.sql.Date
+|CalendarType|TIMESTAMP|java.util.Calendar|calendar, java.util.Calendar
+|CalendarDateType|DATE|java.util.Calendar|calendar_date
+|CalendarTimeType|TIME|java.util.Calendar|calendar_time
+
+- 如何进行映射
+
+ 1. 因为java.util.Date是java.sql.Date java.sql.Time java.sql.Timestamp的父类，所以java.util.date可以对应比好准SQL中的 DATE, TIME 和 TIMESTAMP 类型对应
+ 2. 所以建议大家将持久化类中的时间类型定义为java.util.Date
+
+- 如何把 java.util.Date 映射为 DATE, TIME 和 TIMESTAMP ?
+
+可以通过 property 的 type 属性来进行映射: 
+
+例如:
+``` xml
+<property name="date" type="timestamp">
+    <column name="DATE" />
+</property>
+
+<property name="date" type="data">
+    <column name="DATE" />
+</property>
+
+<property name="date" type="time">
+    <column name="DATE" />
+</property>
+```
+其中 timestamp, date, time 既不是 Java 类型, 也不是标准 SQL 类型, 而是 hibernate 映射类型. 
+
+如果没有指定type，那么就会默认使用Date类型（即对应时间又对应日期）
+
+
+###7.5 Java 大对象类型的 Hiberante 映射
+- 在 Java 中, java.lang.String 可用于表示长字符串(长度超过 255), 字节数组 byte[] 可用于存放图片或文件的二进制数据. 此外, 在 JDBC API 中还提供了 java.sql.Clob 和 java.sql.Blob 类型, 它们分别和标准 SQL 中的 CLOB 和 BLOB 类型对应. CLOB 表示字符串大对象(Character Large Object), BLOB表示二进制对象(Binary Large Object)
+- Mysql 不支持标准 SQL 的 CLOB 类型, 在 Mysql 中, 用 TEXT, MEDIUMTEXT 及 LONGTEXT 类型来表示长度操作 255 的长文本数据
+- 在持久化类中, 二进制大对象可以声明为 byte[] 或 java.sql.Blob 类型; 字符串可以声明为 java.lang.String 或 java.sql.Clob
+- 实际上在 Java 应用程序中处理长度超过 255 的字符串, 使用 java.lang.String 比 java.sql.Clob 更方便
+
+##8 对象关系映射
+###8.1 Introduction
+建立域模型和关系数据模型有着不同的出发点:
+- 域模型: 由程序代码组成, 通过细化持久化类的的粒度可提高代码的可重用性, 简化编程
+- 在没有数据冗余的情况下, 应该尽可能减少表的数目, 简化表之间的参照关系, 以便提高数据的访问速度
+
+Hibernate 把持久化类的属性分为两种: 
+- 值(value)类型: 没有 OID, 不能被单独持久化, 生命周期依赖于所属的持久化类的对象的生命周期(没有hbm.xml配置文件)
+- 无法直接用 property 映射 值类型（自定义对象类型） 属性
+- Hibernate 使用 <component> 元素来映射组成关系, 该元素表名 pay 属性是 Worker 类一个组成部分, 在 Hibernate 中称之为组件
+
+参考：
+``` text
+<project-name>/src/main/java/cn.jxzhang.hibernate/entities/Programmer.java
+<project-name>/src/main/java/cn.jxzhang.hibernate/entities/Programmer.hbm.xml
+<project-name>/src/main/java/cn.jxzhang.hibernate/entities/Salary.java
+```
+###8.2 Unidirectional associations
+###8.2.1 Many-to-one
+A unidirectional many-to-one association is the most common kind of unidirectional association.
+
+单向 n-1 关联只需从 n 的一端可以访问 1 的一端
+    - 域模型: 从 Order 到 Customer 的多对一单向关联需要在Order 类中定义一个 Customer 属性, 而在 Customer 类中无需定义存放 Order 对象的集合属性
+    - 关系数据模型:ORDERS 表中的 CUSTOMER_ID 参照 CUSTOMER 表的主键
+- 显然无法直接用 property 映射 customer 属性
+- Hibernate 使用 <many-to-one> 元素来映射多对一关联关系
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
